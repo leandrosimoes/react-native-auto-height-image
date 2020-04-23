@@ -14,19 +14,29 @@ import { NOOP, DEFAULT_HEIGHT } from './helpers';
 const { resizeMode, ...ImagePropTypes } = AnimatableImage.propTypes;
 
 function AutoHeightImage(props) {
-  const { onHeightChange, source, width, style, ...rest } = props;
+  const { onHeightChange, source, width, maxHeight, style, ...rest } = props;
   const [height, setHeight] = useState(DEFAULT_HEIGHT);
+  const [internalWidth, setInternalWidth] = useState(width);
 
   useEffect(() => {
     (async () => {
       const { height: newHeight } = await getImageSizeFitWidth(source, width);
-      setHeight(newHeight);
-      onHeightChange(newHeight);
+
+      if (maxHeight && newHeight > maxHeight) {
+          const rest = newHeight - maxHeight
+          setInternalWidth(width - rest)
+          setHeight(maxHeight);
+          onHeightChange(maxHeight);
+      } else {
+        setInternalWidth(width)
+        setHeight(newHeight);
+        onHeightChange(newHeight);
+      }
     })();
   }, [source, onHeightChange, width]);
 
   // StyleSheet.create will cache styles, not what we want
-  const imageStyles = { width, height };
+  const imageStyles = { width: internalWidth, height };
 
   // Since it only makes sense to use polyfill with remote images
   const ImageComponent = source.uri ? ImagePolyfill : AnimatableImage;
